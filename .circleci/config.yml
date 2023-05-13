@@ -84,7 +84,3 @@ workflows:
   captone:
     jobs:
       - setup-environment
-      - build-docker:
-          requires: [setup-environment]
-      - deploy-eks:
-          requires: [build-docker]
