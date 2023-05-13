@@ -22,19 +22,37 @@ jobs:
       - print_pipeline_id
       - checkout
       - run:
-          name: make setup (via Makefile)
+          name: make setup
           command: |
             make setup
       - run:
-          name: make install (via Makefile)
+          name: make install
           command: |
             make install
       - run:
-          name: make lint (via Makefile)
+          name: make lint
           command: |
             make lint
+  build-docker:
+    docker:
+      - image: docker:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: install dependencies
+          command: |
+            apk update && apk add bash
+      - run:
+          name: build docker
+          command: |
+            sh ./run_docker.sh
+            sh ./upload_docker.sh
 
 workflows:
   captone:
     jobs:
       - setup-environment
+      - build-docker:
+          requires: [setup-environment]
