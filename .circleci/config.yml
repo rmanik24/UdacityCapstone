@@ -49,6 +49,36 @@ jobs:
           command: |
             sh ./run_docker.sh
             sh ./upload_docker.sh
+  deploy-eks:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - run: apk add --update tar gzip nodejs npm curl 
+      - run: pip install awscli
+      - run: aws --version
+      - run:
+          name: install aws eks
+          command: |
+            sh ./install_eksctl.sh
+      - run:
+          name: install kubectl
+          command: |
+            sh ./install_kubectl.sh
+      - run:
+          name: create aws eks cluster
+          command: |
+            aws sts get-caller-identity
+            eksctl create cluster --name capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1 --zones us-east-1a,us-east-1b,us-east-1c,us-east-1d
+            eksctl utils describe-stacks --region=us-east-1 --cluster=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7}
+            eksctl get cluster --name=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1
+      - run:
+          name: deploy app
+          command: |
+            kubectl get nodes
+            kubectl create deployment capstoneproject --image=rmanik24/capstoneproject &&
+              kubectl expose deployment/capstoneproject --type="LoadBalancer" --port 80
+            kubectl get deployments,rs,svc,pods
 
 workflows:
   captone:
@@ -56,3 +86,5 @@ workflows:
       - setup-environment
       - build-docker:
           requires: [setup-environment]
+      - deploy-eks:
+          requires: [build-docker]
